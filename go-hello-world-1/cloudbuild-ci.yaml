@@ -1,12 +1,4 @@
 steps:
-# This step runs the unit tests on the app
-- name: 'python:3.7-slim'
-  id: Test
-  entrypoint: /bin/sh
-  args:
-  - -c
-  - 'echo "Add unit test here"'
-
 # This step builds the container image.
 - name: 'gcr.io/cloud-builders/docker'
   id: Build
@@ -24,3 +16,42 @@ steps:
   args:
   - 'push'
   - 'gcr.io/$PROJECT_ID/tri-borg:$SHORT_SHA'
+
+### Trigger CD 
+# This step clones the tri-borg repository
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Clone env repository
+  entrypoint: /bin/sh
+  args:
+  - '-c'
+  - |
+    git fetch origin candidate && \
+    git checkout candidate && \
+    git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)')
+
+# This step generates the new manifest
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Generate manifest
+  entrypoint: /bin/sh
+  args:
+  - '-c'
+  - |
+    cd go-hello-world-1 && \
+    sed "s/GOOGLE_CLOUD_PROJECT/${PROJECT_ID}/g" kubernetes.yaml.tpl | \
+    sed "s/COMMIT_SHA/${SHORT_SHA}/g" > kubernetes.yaml && \
+    cat kubernetes.yaml
+
+# This step pushes the manifest back to tri-borg
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Push manifest
+  entrypoint: /bin/sh
+  args:
+  - '-c'
+  - |
+    set -x && \
+    cd go-hello-world-1 && \
+    git add kubernetes.yaml && \
+    git commit -m "Deploying image gcr.io/${PROJECT_ID}/test-project-gke-123:${SHORT_SHA}
+    Built from commit ${COMMIT_SHA} of repository tri-borg-app
+    Author: $(git log --format='%an <%ae>' -n 1 HEAD)" && \
+    git push origin candidate
