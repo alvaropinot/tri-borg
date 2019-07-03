@@ -18,17 +18,6 @@ steps:
   - 'gcr.io/$PROJECT_ID/tri-borg:$SHORT_SHA'
 
 ### Trigger CD 
-# This step clones the tri-borg repository
-- name: 'gcr.io/cloud-builders/gcloud'
-  id: Clone env repository
-  entrypoint: /bin/sh
-  args:
-  - '-c'
-  - |
-    git fetch origin candidate && \
-    git checkout candidate && \
-    git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)')
-
 # This step generates the new manifest
 - name: 'gcr.io/cloud-builders/gcloud'
   id: Generate manifest
@@ -36,6 +25,8 @@ steps:
   args:
   - '-c'
   - |
+    git fetch origin candidate && \
+    git checkout candidate && \
     cd go-hello-world-1 && \
     sed "s/GOOGLE_CLOUD_PROJECT/${PROJECT_ID}/g" kubernetes.yaml.tpl | \
     sed "s/COMMIT_SHA/${SHORT_SHA}/g" > kubernetes.yaml
@@ -82,6 +73,7 @@ steps:
   - |
     set -x && \
     git remote add github-repo git@github.com:TribalScale/tri-borg.git && \
+    git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)')
     cd go-hello-world-1 && \
     git add kubernetes.yaml && \
     git commit -m "Deploying image gcr.io/${PROJECT_ID}/test-project-gke-123:${SHORT_SHA}
