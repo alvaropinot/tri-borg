@@ -6,10 +6,42 @@ steps:
   args:
   - 'apply'
   - '-f'
-  - 'kubernetes.yaml'
+  - 'go-hello-world-1/kubernetes.yaml'
   env:
   - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
   - 'CLOUDSDK_CONTAINER_CLUSTER=standard-cluster-2'
+
+## PUSH Changes to Git repo
+# Decrypt the file containing the key
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - kms
+  - decrypt
+  - --ciphertext-file=./go-hello-world-1/crypto-keys/id_rsa.enc
+  - --plaintext-file=/root/.ssh/id_rsa
+  - --location=global
+  - --keyring=my-keyring
+  - --key=github-key-2
+  volumes:
+  - name: 'ssh'
+    path: /root/.ssh
+
+# Set up git with key and domain.
+- name: 'gcr.io/cloud-builders/git'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    cd go-hello-world-1/crypto-keys && \
+    chmod 600 /root/.ssh/id_rsa
+    cat <<EOF >/root/.ssh/config
+    Hostname github.com
+    IdentityFile /root/.ssh/id_rsa
+    EOF
+    mv known_hosts /root/.ssh/known_hosts
+  volumes:
+  - name: 'ssh'
+    path: /root/.ssh
 
 # This step copies the applied manifest to the production branch
 # The COMMIT_SHA variable is automatically
@@ -21,13 +53,20 @@ steps:
   - '-c'
   - |
     set -x && \
+    git branch -a && \
+    cd go-hello-world-1 && \
     # Configure Git to create commits with Cloud Build's service account
     git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)') && \
+    # Add github repo
+    git remote add github-repo git@github.com:TribalScale/tri-borg.git && \    
     # Switch to the production branch and copy the kubernetes.yaml file from the candidate branch
-    git fetch origin production && git checkout production && \
+    git fetch github-repo production && git checkout production && \
     git checkout $COMMIT_SHA kubernetes.yaml && \
     # Commit the kubernetes.yaml file with a descriptive commit message
     git commit -m "Manifest from commit $COMMIT_SHA
     $(git log --format=%B -n 1 $COMMIT_SHA)" && \
     # Push the changes back to Cloud Source Repository
-    git push origin production
+    git push github-repo production
+  volumes:
+  - name: 'ssh'
+    path: /root/.ssh
