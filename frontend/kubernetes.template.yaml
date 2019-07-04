@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: server
-        image: gcr.io/{{GOOGLE_CLOUD_PROJECT}}/collab-tri-borg_{{APPLICATION_NAME}}:{{COMMIT_SHA}}
+        image: gcr.io/{{GOOGLE_CLOUD_PROJECT}}/ariel_{{APPLICATION_NAME}}:{{COMMIT_SHA}}
         ports:
         - containerPort: 8080
         env:
