@@ -1,25 +1,25 @@
 # This Deployment manifest defines:
-# - single-replica deployment of the container image, with label "app: go-hello-world"
+# - single-replica deployment of the container image, with label "app: ariel-{{APPLICATION_NAME}}"
 # - Pod exposes port 8080
 # - specify PORT environment variable to the container process
 # Syntax reference https://kubernetes.io/docs/concepts/configuration/overview/
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: go-hello-world
+  name: ariel-{{APPLICATION_NAME}}-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: go-hello-world
+      app: ariel-{{APPLICATION_NAME}}
   template:
     metadata:
       labels:
-        app: go-hello-world
+        app: ariel-{{APPLICATION_NAME}}
     spec:
       containers:
       - name: server
-        image: gcr.io/{{GOOGLE_CLOUD_PROJECT}}/tri-borg:{{COMMIT_SHA}}
+        image: gcr.io/{{GOOGLE_CLOUD_PROJECT}}/collab-tri-borg_{{APPLICATION_NAME}}:{{COMMIT_SHA}}
         ports:
         - containerPort: 8080
         env:
@@ -27,18 +27,18 @@ spec:
           value: "8080"
 ---
 # This Service manifest defines:
-# - a load balancer for pods matching label "app: go-hello-world"
+# - a load balancer for pods matching label "app: ariel-{{APPLICATION_NAME}}"
 # - exposing the application to the public Internet (type:LoadBalancer)
 # - routes port 80 of the load balancer to the port 8080 of the Pods.
 # Syntax reference https://kubernetes.io/docs/concepts/configuration/overview/
 apiVersion: v1
 kind: Service
 metadata:
-  name: go-hello-world-external
+  name: ariel-{{APPLICATION_NAME}}-external
 spec:
   type: LoadBalancer
   selector:
-    app: go-hello-world
+    app: ariel-{{APPLICATION_NAME}}
   ports:
   - name: http
     port: 80

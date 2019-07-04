@@ -29,6 +29,7 @@ steps:
     git checkout ${_APPLICATION_NAME}/candidate && \
     cd ${_APPLICATION_NAME} && \
     sed "s/{{GOOGLE_CLOUD_PROJECT}}/${PROJECT_ID}/g" kubernetes.template.yaml | \
+    sed "s/{{APPLICATION_NAME}}/${_APPLICATION_NAME}/g" | \
     sed "s/{{COMMIT_SHA}}/${SHORT_SHA}/g" > kubernetes.yaml
 
 ## PUSH Changes to Git repo
