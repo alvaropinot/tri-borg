@@ -48,7 +48,7 @@ steps:
 # The COMMIT_SHA variable is automatically
 # replaced by Cloud Build.
 - name: 'gcr.io/cloud-builders/git'
-  id: Copy manifest to ${_APPLICATION_NAME}/production branch
+  id: Copy manifest to <app>/production branch
   entrypoint: /bin/sh
   args:
   - '-c'
