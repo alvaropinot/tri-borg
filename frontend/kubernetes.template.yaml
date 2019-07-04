@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: server
-        image: gcr.io/GOOGLE_CLOUD_PROJECT/tri-borg:COMMIT_SHA
+        image: gcr.io/{{GOOGLE_CLOUD_PROJECT}}/tri-borg:{{COMMIT_SHA}}
         ports:
         - containerPort: 8080
         env:
