@@ -6,33 +6,34 @@ steps:
   args:
   - 'apply'
   - '-f'
-  - 'go-hello-world-1/kubernetes.yaml'
+  - '${_APPLICATION_NAME}/kubernetes.yaml'
   env:
-  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-  - 'CLOUDSDK_CONTAINER_CLUSTER=standard-cluster-2'
+  - 'CLOUDSDK_COMPUTE_ZONE=${_CLOUD_COMPUTE_ZONE}'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLOUD_CLUSTER_NAME}'
 
 ## PUSH Changes to Git repo
 # Decrypt the file containing the key
 - name: 'gcr.io/cloud-builders/gcloud'
+  id: Decrypt Git key
   args:
   - kms
   - decrypt
-  - --ciphertext-file=./go-hello-world-1/crypto-keys/id_rsa.enc
+  - --ciphertext-file=./crypto-keys/id_rsa.enc
   - --plaintext-file=/root/.ssh/id_rsa
   - --location=global
-  - --keyring=my-keyring
-  - --key=github-key-2
+  - --keyring=ariel-keyring
+  - --key=github-key-1
   volumes:
   - name: 'ssh'
     path: /root/.ssh
-
 # Set up git with key and domain.
 - name: 'gcr.io/cloud-builders/git'
+  id: Setup Git key
   entrypoint: 'bash'
   args:
   - '-c'
   - |
-    cd go-hello-world-1/crypto-keys && \
+    cd crypto-keys && \
     chmod 600 /root/.ssh/id_rsa
     cat <<EOF >/root/.ssh/config
     Hostname github.com
@@ -47,26 +48,26 @@ steps:
 # The COMMIT_SHA variable is automatically
 # replaced by Cloud Build.
 - name: 'gcr.io/cloud-builders/git'
-  id: Copy to production branch
+  id: Copy manifest to ${_APPLICATION_NAME}/production branch
   entrypoint: /bin/sh
   args:
   - '-c'
   - |
     set -x && \
-    git branch -a && \
-    cd go-hello-world-1 && \
+    cd ${_APPLICATION_NAME} && \
     # Configure Git to create commits with Cloud Build's service account
     git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)') && \
     # Add github repo
     git remote add github-repo git@github.com:TribalScale/tri-borg.git && \    
     # Switch to the production branch and copy the kubernetes.yaml file from the candidate branch
-    git fetch github-repo production && git checkout production && \
+    git fetch github-repo ${_APPLICATION_NAME}/production && \
+    git checkout ${_APPLICATION_NAME}/production && \
     git checkout $COMMIT_SHA kubernetes.yaml && \
     # Commit the kubernetes.yaml file with a descriptive commit message
     git commit -m "Manifest from commit $COMMIT_SHA
     $(git log --format=%B -n 1 $COMMIT_SHA)" && \
     # Push the changes back to Cloud Source Repository
-    git push github-repo production
+    git push github-repo ${_APPLICATION_NAME}/production
   volumes:
   - name: 'ssh'
     path: /root/.ssh
