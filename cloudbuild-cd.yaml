@@ -56,6 +56,7 @@ steps:
     set -x && \
     cd ${_APPLICATION_NAME} && \
     # Configure Git to create commits with Cloud Build's service account
+    git config user.name CI-CD-pipeline
     git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)') && \
     # Add github repo
     git remote add github-repo git@github.com:TribalScale/tri-borg.git && \    

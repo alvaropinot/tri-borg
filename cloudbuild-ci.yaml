@@ -75,6 +75,7 @@ steps:
   - |
     set -x && \
     git remote add github-repo git@github.com:TribalScale/tri-borg.git && \
+    git config user.name CI-CD-pipeline
     git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)')
     cd ${_APPLICATION_NAME} && \
     git add kubernetes.yaml && \
