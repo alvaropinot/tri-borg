@@ -1,0 +1,45 @@
+# This Deployment manifest defines:
+# - single-replica deployment of the container image, with label "app: ariel-frontend"
+# - Pod exposes port 8080
+# - specify PORT environment variable to the container process
+# Syntax reference https://kubernetes.io/docs/concepts/configuration/overview/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ariel-frontend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ariel-frontend
+  template:
+    metadata:
+      labels:
+        app: ariel-frontend
+    spec:
+      containers:
+      - name: server
+        image: gcr.io/collab-tri-borg/ariel_frontend:05aadcd
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
+---
+# This Service manifest defines:
+# - a load balancer for pods matching label "app: ariel-frontend"
+# - exposing the application to the public Internet (type:LoadBalancer)
+# - routes port 80 of the load balancer to the port 8080 of the Pods.
+# Syntax reference https://kubernetes.io/docs/concepts/configuration/overview/
+apiVersion: v1
+kind: Service
+metadata:
+  name: ariel-frontend-external
+spec:
+  type: LoadBalancer
+  selector:
+    app: ariel-frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
